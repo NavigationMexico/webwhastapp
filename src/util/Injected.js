@@ -13,7 +13,6 @@ exports.ExposeStore = (moduleRaidStr) => {
     window.Store.Cmd = window.mR.findModule('Cmd')[0].Cmd;
     window.Store.CryptoLib = window.mR.findModule('decryptE2EMedia')[0];
     window.Store.DownloadManager = window.mR.findModule('downloadManager')[0].downloadManager;
-    window.Store.MDBackend = window.mR.findModule('isMDBackend')[0].isMDBackend();
     window.Store.Features = window.mR.findModule('FEATURE_CHANGE_EVENT')[0].LegacyPhoneFeatures;
     window.Store.GroupMetadata = window.mR.findModule((module) => module.default && module.default.handlePendingInvite)[0].default;
     window.Store.Invite = window.mR.findModule('sendJoinGroupViaInvite')[0];
@@ -162,16 +161,7 @@ exports.LoadUtils = () => {
         if (options.linkPreview) {
             delete options.linkPreview;
 
-            // Not supported yet by WhatsApp Web on MD
-            if(!window.Store.MDBackend) {
-                const link = window.Store.Validators.findLink(content);
-                if (link) {
-                    const preview = await window.Store.Wap.queryLinkPreview(link.url);
-                    preview.preview = true;
-                    preview.subtype = 'url';
-                    options = { ...options, ...preview };
-                }
-            }
+            // TODO Not supported yet by WhatsApp Web on MD
         }
         
         let buttonOptions = {};
@@ -215,13 +205,12 @@ exports.LoadUtils = () => {
         }
 
         const meUser = window.Store.User.getMaybeMeUser();
-        const isMD = window.Store.MDBackend;
 
         const newMsgId = new window.Store.MsgKey({
             from: meUser,
             to: chat.id,
             id: window.Store.MsgKey.newId(),
-            participant: isMD && chat.id.isGroup() ? meUser : undefined,
+            participant: chat.id.isGroup() ? meUser : undefined,
             selfDir: 'out',
         });
 
@@ -526,9 +515,8 @@ exports.LoadUtils = () => {
     };
 
     window.WWebJS.sendChatstate = async (state, chatId) => {
-        if (window.Store.MDBackend) {
-            chatId = window.Store.WidFactory.createWid(chatId);
-        }
+        chatId = window.Store.WidFactory.createWid(chatId);
+    
         switch (state) {
         case 'typing':
             await window.Store.ChatState.sendChatStateComposing(chatId);

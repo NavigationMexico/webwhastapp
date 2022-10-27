@@ -11,7 +11,6 @@ const { ExposeStore, LoadUtils } = require('./util/Injected');
 const ChatFactory = require('./factories/ChatFactory');
 const ContactFactory = require('./factories/ContactFactory');
 const { ClientInfo, Message, MessageMedia, Contact, Location, GroupNotification, Label, Call, Buttons, List, Reaction } = require('./structures');
-const LegacySessionAuth = require('./authStrategies/LegacySessionAuth');
 const NoAuth = require('./authStrategies/NoAuth');
 
 /**
@@ -22,8 +21,6 @@ const NoAuth = require('./authStrategies/NoAuth');
  * @param {number} options.authTimeoutMs - Timeout for authentication selector in puppeteer
  * @param {object} options.puppeteer - Puppeteer launch options. View docs here: https://github.com/puppeteer/puppeteer/
  * @param {number} options.qrMaxRetries - How many times should the qrcode be refreshed before giving up
- * @param {string} options.restartOnAuthFail  - @deprecated This option should be set directly on the LegacySessionAuth.
- * @param {object} options.session - @deprecated Only here for backwards-compatibility. You should move to using LocalAuth, or set the authStrategy to LegacySessionAuth explicitly. 
  * @param {number} options.takeoverOnConflict - If another whatsapp web session is detected (another browser), take over the session in the current browser
  * @param {number} options.takeoverTimeoutMs - How much time to wait before taking over the session
  * @param {string} options.userAgent - User agent to use in puppeteer
@@ -52,23 +49,10 @@ class Client extends EventEmitter {
 
         this.options = Util.mergeDefault(DefaultOptions, options);
         
-        if(!this.options.authStrategy) {
-            if(Object.prototype.hasOwnProperty.call(this.options, 'session')) {
-                process.emitWarning(
-                    'options.session is deprecated and will be removed in a future release due to incompatibility with multi-device. ' +
-                    'Use the LocalAuth authStrategy, don\'t pass in a session as an option, or suppress this warning by using the LegacySessionAuth strategy explicitly (see https://wwebjs.dev/guide/authentication.html#legacysessionauth-strategy).',
-                    'DeprecationWarning'
-                );
-
-                this.authStrategy = new LegacySessionAuth({
-                    session: this.options.session,
-                    restartOnAuthFail: this.options.restartOnAuthFail
-                });
-            } else {
-                this.authStrategy = new NoAuth();
-            }
-        } else {
+        if(this.options.authStrategy) {
             this.authStrategy = this.options.authStrategy;
+        } else {
+            this.authStrategy = new NoAuth();
         }
 
         this.authStrategy.setup(this);
@@ -822,16 +806,11 @@ class Client extends EventEmitter {
      * @returns {Promise<Boolean>}
      */
     async setDisplayName(displayName) {
-        const couldSet = await this.pupPage.evaluate(async displayName => {
+        const couldSet = await this.pupPage.evaluate(async () => {
             if(!window.Store.Conn.canSetMyPushname()) return false;
 
-            if(window.Store.MDBackend) {
-                // TODO
-                return false;
-            } else {
-                const res = await window.Store.Wap.setPushname(displayName);
-                return !res.status || res.status === 200;
-            }
+            // TODO for MD
+            return false;
         }, displayName);
 
         return couldSet;

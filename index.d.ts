@@ -322,14 +322,6 @@ declare namespace WAWebJS {
         /** How many times should the qrcode be refreshed before giving up
 		 * @default 0 (disabled) */
 		qrMaxRetries?: number,
-        /** 
-         * @deprecated This option should be set directly on the LegacySessionAuth
-         */
-        restartOnAuthFail?: boolean
-        /** 
-         * @deprecated Only here for backwards-compatibility. You should move to using LocalAuth, or set the authStrategy to LegacySessionAuth explicitly.  
-         */
-        session?: ClientSession
         /** If another whatsapp web session is detected (another browser), take over the session in the current browser
          * @default false */
         takeoverOnConflict?: boolean,
@@ -403,17 +395,6 @@ declare namespace WAWebJS {
         delete: (options: { session: string }) => Promise<any> | any,
         save: (options: { session: string }) => Promise<any> | any,
         extract: (options: { session: string, path: string }) => Promise<any> | any,
-    }
-
-    /**
-     * Legacy session auth strategy
-     * Not compatible with multi-device accounts.
-     */
-     export class LegacySessionAuth extends AuthStrategy {
-        constructor(options?: {
-            session?: ClientSession,
-            restartOnAuthFail?: boolean,
-        })
     }
 
     /** 
